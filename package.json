@@ -1,0 +1,42 @@
+{
+    "name": "@mkrause/react-form",
+    "version": "0.0.0",
+    "description": "React form component",
+    "author": "mkrause",
+    "license": "MIT",
+    "repository": "https://github.com/mkrause/react-form",
+    "es2015": "src/index.js",
+    "main": "lib-cjs/index.js",
+    "module": "lib-esm/index.js",
+    "browser": "lib-esm/index.js",
+    "files": [
+        "src/",
+        "lib-cjs/",
+        "lib-esm/"
+    ],
+    "scripts": {
+        "build:cjs": "NODE_ENV=production BABEL_ENV=cjs babel src --out-dir lib-cjs --source-maps inline",
+        "build:esm": "NODE_ENV=production BABEL_ENV=esm babel src --out-dir lib-esm --source-maps inline",
+        "test": "NODE_ENV=development BABEL_ENV=cjs mocha --require=@babel/register --recursive tests",
+        "prepare": "npm run build:esm && npm run build:cjs",
+        "prepublishOnly": "npm run build:esm && npm run build:cjs"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.1.2",
+        "@babel/cli": "^7.1.2",
+        "@babel/register": "^7.0.0",
+        "@babel/plugin-proposal-class-properties": "^7.1.0",
+        "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
+        "babel-plugin-transform-builtin-extend": "^1.1.2",
+        "@babel/preset-react": "^7.0.0",
+        "@babel/preset-env": "^7.1.0",
+        "mocha": "^5.2.0",
+        "chai": "^4.2.0"
+    },
+    "peerDependencies": {
+        "react": "^16.6.0"
+    },
+    "dependencies": {
+        "message-tag": "^0.2.2"
+    }
+}
