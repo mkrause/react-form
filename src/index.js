@@ -54,7 +54,9 @@ const updateWithAccessor = (accessor, buffer, value) => {
     if (typeof accessor === 'function') {
         throw new TypeError('TODO'); // Idea: use { has, get, set } object instead?
     } else if (typeof accessor === 'string') {
-        const [key, ...path] = accessor.split('.');
+        return updateWithAccessor(accessor.split('.'), buffer, value);
+    } else if (Array.isArray(accessor)) {
+        const [key, ...path] = accessor;
         
         if (typeof buffer !== 'object' || buffer === null) {
             throw new TypeError($msg`Cannot access ${key} on non-object ${buffer}`);
@@ -65,7 +67,7 @@ const updateWithAccessor = (accessor, buffer, value) => {
         if (path.length === 0) {
             return { ...buffer, [key]: value };
         } else {
-            return updateWithAccessor(path, buffer[key], value);
+            return { ...buffer, [key]: updateWithAccessor(path, buffer[key], value) };
         }
     } else {
         throw new TypeError($msg`Unknown accessor type ${accessor}`);
