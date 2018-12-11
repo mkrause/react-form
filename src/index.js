@@ -1,12 +1,13 @@
 
 import $msg from 'message-tag';
 
+import hoistNonReactStatics from 'hoist-non-react-statics';
 import * as React from 'react';
 
 
 export const Context = React.createContext();
 
-const hasAccessor = (accessor, buffer) => {
+export const hasAccessor = (accessor, buffer) => {
     if (typeof accessor === 'function') {
         throw new TypeError('TODO');
     } else if (typeof accessor === 'string') {
@@ -28,7 +29,7 @@ const hasAccessor = (accessor, buffer) => {
     }
 };
 
-const selectWithAccessor = (accessor, buffer) => {
+export const selectWithAccessor = (accessor, buffer) => {
     if (typeof accessor === 'function') {
         return accessor(buffer);
     } else if (typeof accessor === 'string') {
@@ -50,7 +51,7 @@ const selectWithAccessor = (accessor, buffer) => {
     }
 };
 
-const updateWithAccessor = (accessor, buffer, value) => {
+export const updateWithAccessor = (accessor, buffer, value) => {
     if (typeof accessor === 'function') {
         throw new TypeError('TODO'); // Idea: use { has, get, set } object instead?
     } else if (typeof accessor === 'string') {
@@ -74,7 +75,7 @@ const updateWithAccessor = (accessor, buffer, value) => {
     }
 };
 
-const setWithAccessor = (accessor, buffer, value) => {
+export const setWithAccessor = (accessor, buffer, value) => {
     if (typeof accessor === 'function') {
         throw new TypeError('TODO'); // Idea: use { get, set } object instead?
     } else if (typeof accessor === 'string') {
@@ -107,7 +108,14 @@ export const Field = ({ children, component: FieldComponent = 'input', accessor,
             const value = selectWithAccessor(accessor, buffer);
             
             const fieldProps = {
-                onChange: evt => { updateBuffer(accessor, evt.target.value); },
+                onChange: evt => {
+                    let value = evt.target.value;
+                    if (evt.target.hasOwnProperty('checked')) {
+                        value = evt.target.checked;
+                    }
+                    
+                    updateBuffer(accessor, value);
+                },
                 ...props
             };
             
@@ -268,3 +276,16 @@ export class Provider extends React.PureComponent {
         );
     }
 }
+
+export const withForm = Component => {
+    const WithForm = props =>
+        <Context.Consumer>
+            {({ buffer, updateBuffer, updateMeta }) =>
+                <Component {...props} buffer={buffer} updateBuffer={updateBuffer} updateMeta={updateMeta}/>
+            }
+        </Context.Consumer>;
+    
+    hoistNonReactStatics(WithForm, Component);
+    
+    return WithForm;
+};
