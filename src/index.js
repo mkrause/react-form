@@ -274,7 +274,7 @@ export class Provider extends React.PureComponent {
                 }
                 
                 if (!hasAccessor(accessor, this.state.meta) || !selectWithAccessor(accessor, this.state.meta).touched) {
-                    const meta = updateWithAccessor(accessor, this.state.meta,
+                    const meta = setWithAccessor(accessor, this.state.meta,
                         fieldMeta => ({ ...(fieldMeta || {}), touched: true })
                     );
                     
