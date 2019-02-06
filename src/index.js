@@ -7,6 +7,7 @@ import * as React from 'react';
 
 export const Context = React.createContext();
 
+// Check if the given buffer has the given accessor
 export const hasAccessor = (accessor, buffer) => {
     if (typeof accessor === 'function') {
         throw new TypeError('TODO');
@@ -29,6 +30,7 @@ export const hasAccessor = (accessor, buffer) => {
     }
 };
 
+// Select the value at the given accessor
 export const selectWithAccessor = (accessor, buffer) => {
     if (typeof accessor === 'function') {
         return accessor(buffer);
@@ -51,6 +53,38 @@ export const selectWithAccessor = (accessor, buffer) => {
     }
 };
 
+// Return an updated version of the given buffer (where the property may not already exist)
+export const setWithAccessor = (accessor, buffer, value) => {
+    if (typeof accessor === 'function') {
+        throw new TypeError('TODO'); // Idea: use { has, get, set } object instead?
+    } else if (typeof accessor === 'string') {
+        return setWithAccessor(accessor.split('.'), buffer, value);
+    } else if (Array.isArray(accessor)) {
+        const [key, ...path] = accessor;
+        
+        const bufferAsObject = typeof buffer === 'object' && buffer !== null
+            ? buffer
+            : {};
+        
+        if (path.length === 0) {
+            const updatedValue = typeof value === 'function'
+                ? value(bufferAsObject[key])
+                : value;
+            
+            return { ...bufferAsObject, [key]: updatedValue };
+        } else {
+            const prop = Object.prototype.hasOwnProperty.call(bufferAsObject, key)
+                ? bufferAsObject[key]
+                : {};
+            
+            return { ...bufferAsObject, [key]: setWithAccessor(path, prop, value) };
+        }
+    } else {
+        throw new TypeError($msg`Unknown accessor type ${accessor}`);
+    }
+};
+
+// Return an updated version of the given buffer (where the property is assumed to exist)
 export const updateWithAccessor = (accessor, buffer, value) => {
     if (typeof accessor === 'function') {
         throw new TypeError('TODO'); // Idea: use { has, get, set } object instead?
@@ -66,7 +100,11 @@ export const updateWithAccessor = (accessor, buffer, value) => {
         }
         
         if (path.length === 0) {
-            return { ...buffer, [key]: value };
+            const updatedValue = typeof value === 'function'
+                ? value(buffer[key])
+                : value;
+            
+            return { ...buffer, [key]: updatedValue };
         } else {
             return { ...buffer, [key]: updateWithAccessor(path, buffer[key], value) };
         }
@@ -75,37 +113,42 @@ export const updateWithAccessor = (accessor, buffer, value) => {
     }
 };
 
-export const setWithAccessor = (accessor, buffer, value) => {
-    if (typeof accessor === 'function') {
-        throw new TypeError('TODO'); // Idea: use { get, set } object instead?
-    } else if (typeof accessor === 'string') {
-        const [key, ...path] = accessor.split('.');
-        
-        let bufferAsObject = buffer;
-        
-        if (typeof buffer !== 'object' || buffer === null) {
-            throw new TypeError($msg`Cannot access ${key} on non-object ${buffer}`);
-        } else if (!Object.prototype.hasOwnProperty.call(buffer, key)) {
-            bufferAsObject = { ...buffer, [key]: {} };
-        }
-        
-        if (path.length === 0) {
-            const updatedValue = typeof value === 'function'
-                ? value(bufferAsObject[key])
-                : value;
-            return { ...bufferAsObject, [key]: updatedValue };
-        } else {
-            return updateWithAccessor(path, bufferAsObject[key], value);
-        }
-    } else {
-        throw new TypeError($msg`Unknown accessor type ${accessor}`);
+const getError = ({ meta, errors, submitted }, accessor) => {
+    const fieldMeta = hasAccessor(accessor, meta)
+        ? selectWithAccessor(accessor, meta)
+        : { touched: false };
+    
+    // Only show the error message if the user has interacted with the form/field somehow
+    const shouldShowMessage =
+        submitted
+        || fieldMeta.touched;
+    
+    if (!shouldShowMessage) {
+        return null;
+    }
+    
+    try {
+        return selectWithAccessor(accessor, errors);
+    } catch (e) {
+        // No error
+        return null;
     }
 };
 
 export const Field = ({ children, component: FieldComponent = 'input', accessor, ...props } = {}) =>
     <Context.Consumer>
-        {({ buffer, updateBuffer, updateMeta }) => {
+        {({ buffer, updateBuffer, meta, updateMeta, errors, submitted }) => {
             const value = selectWithAccessor(accessor, buffer);
+            
+            const formMeta = {
+                submitted,
+            };
+            
+            const fieldMeta = hasAccessor(accessor, meta) ? selectWithAccessor(accessor, meta) : {
+                touched: false,
+            };
+            
+            const fieldError = getError({ meta, errors, submitted }, accessor);
             
             const fieldProps = {
                 onChange: evt => {
@@ -116,9 +159,17 @@ export const Field = ({ children, component: FieldComponent = 'input', accessor,
                     
                     updateBuffer(accessor, value);
                 },
+                onBlur: evt => {
+                    if (!hasAccessor(accessor, meta) || !selectWithAccessor(accessor, meta).touched) {
+                        const metaUpdated = setWithAccessor(accessor, meta,
+                            fieldMeta => ({ ...(fieldMeta || {}), touched: true })
+                        );
+                        
+                        updateMeta(metaUpdated);
+                    }
+                },
                 ...props
             };
-            
             if (typeof value === 'string') {
                 fieldProps.value = value;
             } else if (typeof value === 'number') {
@@ -135,7 +186,7 @@ export const Field = ({ children, component: FieldComponent = 'input', accessor,
                 };
                 
                 return typeof children === 'function'
-                    ? children(fieldProps, actions)
+                    ? children({ formMeta, fieldProps, fieldMeta, fieldError }, actions)
                     : children;
             }
             
@@ -156,33 +207,19 @@ export const Fields = {
 
 export const ErrorMessage = ({ children, component: ErrorComponent = React.Fragment, accessor, ...props }) =>
     <Context.Consumer>
-        {({ errors, submitted, meta }) => {
-            const fieldMeta = hasAccessor(accessor, meta)
-                ? selectWithAccessor(accessor, meta)
-                : { touched: false };
+        {({ meta, errors, submitted }) => {
+            const error = getError({ meta, errors, submitted }, accessor);
             
-            // Only show the error message if the user has interacted with the form/field somehow
-            const shouldShowMessage =
-                submitted
-                || fieldMeta.touched;
-            
-            if (!shouldShowMessage) {
+            if (error === null) {
                 return null;
             }
             
-            try {
-                const error = selectWithAccessor(accessor, errors);
-                
-                if (typeof children !== 'undefined') {
-                    return typeof children === 'function'
-                        ? children(error)
-                        : children;
-                } else {
-                    return <ErrorComponent {...props}>{error}</ErrorComponent>;
-                }
-            } catch (e) {
-                // No error, so ignore
-                return null;
+            if (typeof children !== 'undefined') {
+                return typeof children === 'function'
+                    ? children(error)
+                    : children;
+            } else {
+                return <ErrorComponent {...props}>{error}</ErrorComponent>;
             }
         }}
     </Context.Consumer>;
@@ -207,11 +244,19 @@ export class Provider extends React.PureComponent {
             return;
         }
         
-        this.setState({ errors: this.props.validate(buffer) });
+        const errors = this.props.validate(buffer) || {};
+        
+        this.setState({ errors });
     };
     
     componentDidMount() {
         this.validate(this.props.buffer);
+    }
+    
+    componentDidUpdate(prevProps, prevState) {
+        if (prevProps.buffer !== this.props.buffer) {
+            this.validate(this.props.buffer);
+        }
     }
     
     render() {
@@ -229,7 +274,7 @@ export class Provider extends React.PureComponent {
                 }
                 
                 if (!hasAccessor(accessor, this.state.meta) || !selectWithAccessor(accessor, this.state.meta).touched) {
-                    const meta = setWithAccessor(accessor, this.state.meta,
+                    const meta = updateWithAccessor(accessor, this.state.meta,
                         fieldMeta => ({ ...(fieldMeta || {}), touched: true })
                     );
                     
@@ -248,9 +293,9 @@ export class Provider extends React.PureComponent {
             // },
             
             meta: this.state.meta,
-            // updateMeta: (accessor, fieldMeta) => {
-            //   this.setState({ meta: setWithAccessor(accessor, this.state.meta, fieldMeta) });
-            // },
+            updateMeta: meta => {
+              this.setState({ meta });
+            },
             
             submit: () => {
                 this.setState({
