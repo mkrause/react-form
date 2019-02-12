@@ -11,20 +11,16 @@ export const Context = React.createContext();
 export const hasAccessor = (accessor, buffer) => {
     if (typeof accessor === 'function') {
         throw new TypeError('TODO');
+    } else if (Array.isArray(accessor)) {
+        if (accessor.length === 0) {
+            return true;
+        }
+        const [key, ...accessorRest] = accessor;
+        if (typeof buffer !== 'object' || buffer === null) { return false; }
+        if (!Object.prototype.hasOwnProperty.call(buffer, key)) { return false; }
+        return hasAccessor(accessorRest, buffer[key]);
     } else if (typeof accessor === 'string') {
-        return accessor.split('.')
-            .reduce(
-                (buffer, key) => {
-                    if (typeof buffer !== 'object' || buffer === null) {
-                        return false;
-                    } else if (!Object.prototype.hasOwnProperty.call(buffer, key)) {
-                        return false;
-                    } else {
-                        return true;
-                    }
-                },
-                buffer
-            );
+        return hasAccessor(accessor.split('.'), buffer);
     } else {
         throw new TypeError($msg`Unknown accessor type ${accessor}`);
     }
