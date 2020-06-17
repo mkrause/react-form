@@ -22,22 +22,23 @@
         "prepublishOnly": "npm run build:esm && npm run build:cjs"
     },
     "devDependencies": {
-        "@babel/core": "^7.1.2",
-        "@babel/cli": "^7.1.2",
-        "@babel/register": "^7.0.0",
-        "@babel/plugin-proposal-class-properties": "^7.1.0",
-        "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
+        "@babel/core": "^7.10.2",
+        "@babel/cli": "^7.10.1",
+        "@babel/register": "^7.10.1",
+        "@babel/plugin-proposal-class-properties": "^7.10.1",
+        "@babel/plugin-proposal-object-rest-spread": "^7.10.1",
         "babel-plugin-transform-builtin-extend": "^1.1.2",
-        "@babel/preset-react": "^7.0.0",
-        "@babel/preset-env": "^7.1.0",
-        "mocha": "^5.2.0",
+        "@babel/preset-react": "^7.10.1",
+        "@babel/preset-env": "^7.10.2",
+        "mocha": "^8.0.1",
         "chai": "^4.2.0",
-        "react": "^16.6.0"
+        "react": "^16.13.1"
     },
     "peerDependencies": {
-        "react": "^16.6.0"
+        "react": "^16.13.1"
     },
     "dependencies": {
-        "message-tag": "^0.2.2"
+        "message-tag": "^0.5.2",
+        "hoist-non-react-statics": "^3.3.2"
     }
 }

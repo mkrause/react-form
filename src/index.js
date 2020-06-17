@@ -10,7 +10,13 @@ export const Context = React.createContext();
 // Check if the given buffer has the given accessor
 export const hasAccessor = (accessor, buffer) => {
     if (typeof accessor === 'function') {
-        throw new TypeError('TODO');
+        let acc;
+        try {
+            acc = accessor(buffer);
+            return true;
+        } catch (e) {
+            return false;
+        }
     } else if (Array.isArray(accessor)) {
         if (accessor.length === 0) {
             return true;
@@ -52,7 +58,7 @@ export const selectWithAccessor = (accessor, buffer) => {
 // Return an updated version of the given buffer (where the property may not already exist)
 export const setWithAccessor = (accessor, buffer, value) => {
     if (typeof accessor === 'function') {
-        throw new TypeError('TODO'); // Idea: use { has, get, set } object instead?
+        return setWithAccessor(accessor(buffer), buffer, value);
     } else if (typeof accessor === 'string') {
         return setWithAccessor(accessor.split('.'), buffer, value);
     } else if (Array.isArray(accessor)) {
@@ -67,13 +73,25 @@ export const setWithAccessor = (accessor, buffer, value) => {
                 ? value(bufferAsObject[key])
                 : value;
             
-            return { ...bufferAsObject, [key]: updatedValue };
+            if (Array.isArray(bufferAsObject)) {
+                const bufferAsArray = [...bufferAsObject]; // Copy so we can mutate
+                bufferAsArray.splice(key, 1, updatedValue);
+                return bufferAsArray;
+            } else {
+                return { ...bufferAsObject, [key]: updatedValue };
+            }
         } else {
             const prop = Object.prototype.hasOwnProperty.call(bufferAsObject, key)
                 ? bufferAsObject[key]
                 : {};
             
-            return { ...bufferAsObject, [key]: setWithAccessor(path, prop, value) };
+            if (Array.isArray(bufferAsObject)) {
+                const bufferAsArray = [...bufferAsObject]; // Copy so we can mutate
+                bufferAsArray.splice(key, 1, setWithAccessor(path, prop, value));
+                return bufferAsArray;
+            } else {
+                return { ...bufferAsObject, [key]: setWithAccessor(path, prop, value) };
+            }
         }
     } else {
         throw new TypeError($msg`Unknown accessor type ${accessor}`);
@@ -83,7 +101,7 @@ export const setWithAccessor = (accessor, buffer, value) => {
 // Return an updated version of the given buffer (where the property is assumed to exist)
 export const updateWithAccessor = (accessor, buffer, value) => {
     if (typeof accessor === 'function') {
-        throw new TypeError('TODO'); // Idea: use { has, get, set } object instead?
+        return updateWithAccessor(accessor(buffer), buffer, value);
     } else if (typeof accessor === 'string') {
         return updateWithAccessor(accessor.split('.'), buffer, value);
     } else if (Array.isArray(accessor)) {
@@ -100,16 +118,28 @@ export const updateWithAccessor = (accessor, buffer, value) => {
                 ? value(buffer[key])
                 : value;
             
-            return { ...buffer, [key]: updatedValue };
+            if (Array.isArray(buffer)) {
+                const bufferAsArray = [...buffer]; // Copy so we can mutate
+                bufferAsArray.splice(key, 1, updatedValue);
+                return bufferAsArray;
+            } else {
+                return { ...buffer, [key]: updatedValue };
+            }
         } else {
-            return { ...buffer, [key]: updateWithAccessor(path, buffer[key], value) };
+            if (Array.isArray(buffer)) {
+                const bufferAsArray = [...buffer]; // Copy so we can mutate
+                bufferAsArray.splice(key, 1, updateWithAccessor(path, buffer[key], value));
+                return bufferAsArray;
+            } else {
+                return { ...buffer, [key]: updateWithAccessor(path, buffer[key], value) };
+            }
         }
     } else {
         throw new TypeError($msg`Unknown accessor type ${accessor}`);
     }
 };
 
-const getError = ({ meta, errors, submitted }, accessor) => {
+export const getError = ({ meta, errors, submitted }, accessor) => {
     const fieldMeta = hasAccessor(accessor, meta)
         ? selectWithAccessor(accessor, meta)
         : { touched: false };
