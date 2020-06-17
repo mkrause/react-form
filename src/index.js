@@ -58,7 +58,8 @@ export const selectWithAccessor = (accessor, buffer) => {
 // Return an updated version of the given buffer (where the property may not already exist)
 export const setWithAccessor = (accessor, buffer, value) => {
     if (typeof accessor === 'function') {
-        return setWithAccessor(accessor(buffer), buffer, value);
+        // Idea: use { has, get, set } object instead?
+        throw new TypeError('Cannot update buffer given function accessor');
     } else if (typeof accessor === 'string') {
         return setWithAccessor(accessor.split('.'), buffer, value);
     } else if (Array.isArray(accessor)) {
@@ -101,7 +102,8 @@ export const setWithAccessor = (accessor, buffer, value) => {
 // Return an updated version of the given buffer (where the property is assumed to exist)
 export const updateWithAccessor = (accessor, buffer, value) => {
     if (typeof accessor === 'function') {
-        return updateWithAccessor(accessor(buffer), buffer, value);
+        // Idea: use { has, get, set } object instead?
+        throw new TypeError('Cannot update buffer given function accessor');
     } else if (typeof accessor === 'string') {
         return updateWithAccessor(accessor.split('.'), buffer, value);
     } else if (Array.isArray(accessor)) {
