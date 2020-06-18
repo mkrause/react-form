@@ -63,6 +63,10 @@ export const setWithAccessor = (accessor, buffer, value) => {
     } else if (typeof accessor === 'string') {
         return setWithAccessor(accessor.split('.'), buffer, value);
     } else if (Array.isArray(accessor)) {
+        if (accessor.length === 0) {
+            return value;
+        }
+        
         const [key, ...path] = accessor;
         
         const bufferAsObject = typeof buffer === 'object' && buffer !== null
@@ -107,6 +111,10 @@ export const updateWithAccessor = (accessor, buffer, value) => {
     } else if (typeof accessor === 'string') {
         return updateWithAccessor(accessor.split('.'), buffer, value);
     } else if (Array.isArray(accessor)) {
+        if (accessor.length === 0) {
+            return value;
+        }
+        
         const [key, ...path] = accessor;
         
         if (typeof buffer !== 'object' || buffer === null) {
