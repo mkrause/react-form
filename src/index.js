@@ -61,7 +61,11 @@ export const setWithAccessor = (accessor, buffer, value) => {
         // Idea: use { has, get, set } object instead?
         throw new TypeError('Cannot update buffer given function accessor');
     } else if (typeof accessor === 'string') {
-        return setWithAccessor(accessor.split('.'), buffer, value);
+        if (accessor === '') {
+            return setWithAccessor([], buffer, value);
+        } else {
+            return setWithAccessor(accessor.split('.'), buffer, value);
+        }
     } else if (Array.isArray(accessor)) {
         if (accessor.length === 0) {
             return value;
@@ -109,7 +113,11 @@ export const updateWithAccessor = (accessor, buffer, value) => {
         // Idea: use { has, get, set } object instead?
         throw new TypeError('Cannot update buffer given function accessor');
     } else if (typeof accessor === 'string') {
-        return updateWithAccessor(accessor.split('.'), buffer, value);
+        if (accessor === '') {
+            return updateWithAccessor([], buffer, value);
+        } else {
+            return updateWithAccessor(accessor.split('.'), buffer, value);
+        }
     } else if (Array.isArray(accessor)) {
         if (accessor.length === 0) {
             return value;
