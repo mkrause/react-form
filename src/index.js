@@ -37,7 +37,13 @@ export const selectWithAccessor = (accessor, buffer) => {
     if (typeof accessor === 'function') {
         return accessor(buffer);
     } else if (typeof accessor === 'string') {
-        return accessor.split('.')
+        if (accessor === '') {
+            return selectWithAccessor([], buffer);
+        } else {
+            return selectWithAccessor(accessor.split('.'), buffer);
+        }
+    } else if (Array.isArray(accessor)) {
+        return accessor
             .reduce(
                 (buffer, key) => {
                     if (typeof buffer !== 'object' || buffer === null) {
@@ -120,7 +126,9 @@ export const updateWithAccessor = (accessor, buffer, value) => {
         }
     } else if (Array.isArray(accessor)) {
         if (accessor.length === 0) {
-            return value;
+            return typeof value === 'function'
+                ? value(buffer)
+                : value;
         }
         
         const [key, ...path] = accessor;
