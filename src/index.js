@@ -350,15 +350,18 @@ export class Provider extends React.PureComponent {
             },
             
             submit: () => {
-                this.setState({
-                    pristine: false,
-                    submitted: true,
-                }, () => {
-                    if (Object.keys(this.state.errors).length > 0) {
-                        return;
-                    }
-                    
-                    this.props.onSubmit();
+                return new Promise((resolve, reject) => {
+                    this.setState({
+                        pristine: false,
+                        submitted: true,
+                    }, () => {
+                        if (Object.keys(this.state.errors).length > 0) {
+                            reject(new Error(`Errors found`));
+                            return;
+                        }
+                        
+                        resolve(this.props.onSubmit());
+                    });
                 });
             },
         };
